@@ -58,6 +58,115 @@ def get_active_franchises_with_theaters(session: Session):
         })
     return result
 
+def add_new_show(
+    session: Session, 
+    hall_id: int, 
+    show_name: str, 
+    show_date: datetime, 
+    duration: int
+):
+    """
+    Добавить новое шоу
+    """
+    new_show = Show(
+        hall_id=hall_id,
+        show_name=show_name,
+        show_date=show_date,
+        duration=duration,
+        created_at=datetime.now()
+    )
+    session.add(new_show)
+    session.commit()
+    session.refresh(new_show)
+    return new_show
+
+
+def add_customer_ticket(
+    session: Session,
+    show_id: int,
+    seat_number: str,
+    customer_email: str,
+    price: float,
+    ticket_type: str = "standard"
+):
+    """
+    Добавить билет для клиента
+    """
+    new_ticket = Ticket(
+        show_id=show_id,
+        seat_number=seat_number,
+        email=customer_email,
+        price=price,
+        ticket_type=ticket_type,
+        purchase_date=datetime.now(),
+        status="active"
+    )
+    session.add(new_ticket)
+    session.commit()
+    return new_ticket
+
+def update_franchise_status(
+    session: Session, 
+    franchise_id: int, 
+    new_status: str
+):
+    """
+    Обновить статус франшизы
+    """
+    franchise = session.get(Franchise, franchise_id)
+    if franchise:
+        franchise.status = new_status
+        franchise.updated_at = datetime.now()
+        session.commit()
+        session.refresh(franchise)
+    return franchise
+
+
+def update_show_duration(
+    session: Session, 
+    show_id: int, 
+    new_duration: int
+):
+    """
+    Обновить продолжительность шоу
+    """
+    show = session.get(Show, show_id)
+    if show:
+        show.duration = new_duration
+        session.commit()
+        session.refresh(show)
+    return show
+
+def delete_rented_equipment(
+    session: Session, 
+    rent_id: int
+):
+    """
+    Удалить запись об аренде оборудования
+    """
+    rented_eq = session.get(RentEquipment, rent_id)
+    if rented_eq:
+        session.delete(rented_eq)
+        session.commit()
+        return True
+    return False
+
+
+def cancel_customer_ticket(
+    session: Session, 
+    ticket_id: int
+):
+    """
+    Отменить билет клиента (мягкое удаление через изменение статуса)
+    """
+    ticket = session.get(Ticket, ticket_id)
+    if ticket:
+        ticket.status = "cancelled"
+        ticket.cancelled_at = datetime.now()
+        session.commit()
+        return True
+    return False
+
 with Session(engine) as session:
     shows = get_shows_by_theater(session, theater_id=1)
     for show in shows:
